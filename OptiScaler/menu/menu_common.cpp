@@ -204,7 +204,7 @@ static const DlssNrKnob dlssNrKnobs[] {
     { "Environment colour", &Config::DlssNrEnvironmentColour, nullptr, 0.0f, 1.0f, 0.05f },
     { "Restore sharpness", &Config::DlssNrReplaceDetailStrength, nullptr, 0.0f, 2.0f, 0.05f },
     { "White point trim", &Config::DlssNrWhitePointTrim, nullptr, -1.0f, 1.0f, 0.05f },
-    { "Preset", nullptr, &Config::DlssNrPreset, 0.0f, 8.0f, 1.0f },
+    { "Preset", nullptr, &Config::DlssNrPreset, 0.0f, 3.0f, 1.0f },
     { "Style (0 Std / 1 Nat / 2 Cin)", nullptr, &Config::DlssNrStyle, 0.0f, 2.0f, 1.0f },
 };
 static size_t dlssNrKnobIndex = 0;
