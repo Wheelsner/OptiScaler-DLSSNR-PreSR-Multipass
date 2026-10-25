@@ -199,7 +199,7 @@ static const DlssNrKnob dlssNrKnobs[] {
     { "Local tone", &Config::DlssNrLocalTone, nullptr, 0.0f, 2.0f, 0.05f },
     { "Skin detail", &Config::DlssNrSkinDetail, nullptr, 0.0f, 1.0f, 0.05f },
     { "Skin colour", &Config::DlssNrSkinColour, nullptr, 0.0f, 1.0f, 0.05f },
-    { "Skin structure", &Config::DlssNrSkinStructure, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Skin structure", &Config::DlssNrSkinStructure, nullptr, -1.0f, 2.0f, 0.05f },
     { "Environment detail", &Config::DlssNrEnvironmentDetail, nullptr, 0.0f, 1.0f, 0.05f },
     { "Environment colour", &Config::DlssNrEnvironmentColour, nullptr, 0.0f, 1.0f, 0.05f },
     { "Restore sharpness", &Config::DlssNrReplaceDetailStrength, nullptr, 0.0f, 2.0f, 0.05f },
