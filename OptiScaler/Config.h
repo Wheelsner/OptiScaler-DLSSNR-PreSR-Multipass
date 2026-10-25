@@ -823,14 +823,18 @@ class Config
 
     static Config* Instance();
 
+    // Path of the currently loaded ini (for external hot-reload watching).
+    std::filesystem::path IniPath() const { return absoluteFileName; }
+
+    // Re-reads the ini at runtime (used by profile loading and ini hot-reload).
+    bool Reload(std::filesystem::path iniPath);
+
   private:
     inline static Config* _config;
     inline static std::vector<std::string> _log;
 
     std::filesystem::path absoluteFileName;
     std::wstring fileName = L"OptiScaler.ini";
-
-    bool Reload(std::filesystem::path iniPath);
 
     std::optional<std::string> readString(std::string section, std::string key, bool lowercase = false);
     std::optional<std::wstring> readWString(std::string section, std::string key, bool lowercase = false);

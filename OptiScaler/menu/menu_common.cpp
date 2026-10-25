@@ -264,6 +264,52 @@ void MenuCommon::UpdateManualInput(HWND targetHwnd)
 
     const auto config = Config::Instance();
 
+    // ---- INI hot-reload (menu-less configuration) --------------------------
+    // Watches the ini's write time and reloads it when it changes, so values can
+    // be tuned by editing the file without the overlay (which crashes under
+    // Proton). Reload() is the same call the profile loader makes at runtime;
+    // keys that are startup-bound (upscaler selection, feature creation) still
+    // require a restart, same as the menu's own profile-load path.
+    {
+        static double lastCheck = 0;
+        static FILETIME lastWriteTime {};
+        static double changeSeenAt = 0;
+        static bool wasChanged = false;
+
+        const double now = Util::MillisecondsNow();
+        if (lastCheck == 0 || now - lastCheck >= 250) // stat at most every 250 ms
+        {
+            lastCheck = now;
+
+            WIN32_FILE_ATTRIBUTE_DATA attrs {};
+            const auto iniPath = config->IniPath();
+            if (!iniPath.empty() &&
+                GetFileAttributesExW(iniPath.wstring().c_str(), GetFileExInfoStandard, &attrs))
+            {
+                const bool changed =
+                    (attrs.ftLastWriteTime.dwLowDateTime != lastWriteTime.dwLowDateTime ||
+                     attrs.ftLastWriteTime.dwHighDateTime != lastWriteTime.dwHighDateTime);
+
+                if (changed)
+                {
+                    wasChanged = true;
+                    changeSeenAt = now; // reset the stability timer on every write
+                    lastWriteTime = attrs.ftLastWriteTime;
+                }
+
+                // Debounce: reload only after 500 ms with no further writes, so
+                // partially-written files and editor temp-save cycles are skipped.
+                if (wasChanged && now - changeSeenAt >= 500)
+                {
+                    wasChanged = false;
+                    LOG_INFO("INI hot-reload: file changed, reloading config");
+                    config->Reload(iniPath);
+                }
+            }
+        }
+    }
+    // -------------------------------------------------------------------------
+
     auto CheckShortcut =
         [&](int vk, bool& inputFlag, const char* logMessage, bool requireCtrl = false, bool requireAlt = false)
     {
