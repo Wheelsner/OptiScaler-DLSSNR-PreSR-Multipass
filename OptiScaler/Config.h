@@ -59,14 +59,15 @@ template <class T, HasDefaultValue defaultState = WithDefault> class CustomOptio
 
     // Re-apply an ini value over one that was already set (ini hot-reload).
     // set_from_config is first-write-wins so profile Reloads do not clobber
-    // menu-tweaked values; the ini watcher needs the file to win instead.
-    // Values written by in-session user edits (volatile: menu sliders, adjust
-    // keys) are skipped — otherwise any ini touch (e.g. a keybind change)
-    // silently reverts every knob tuned since launch, before exit-save can
-    // persist it. The file wins for everything else, including reverts.
+    // menu-tweaked values; the ini watcher needs the file to win instead —
+    // but only when the file's value for this key actually changed since the
+    // last load. _configIni tracks the last file-seeded value; user edits
+    // (menu sliders, adjust keys, operator=) never touch it, so an unchanged
+    // file skips and in-session tunes survive. _volatile values are runtime
+    // measurements that never come from the file and are always skipped.
     constexpr void reset_from_config(const std::optional<T>& opt)
     {
-        if (_volatile)
+        if (_volatile || opt == _configIni)
             return;
         this->reset();
         set_from_config(opt);
