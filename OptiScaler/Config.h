@@ -300,6 +300,11 @@ class Config
     // them the absolute change their pixel would have had. Off = plain ratio, for comparison.
     CustomOptional<bool> DlssNrDenoiseFirstFireflyGuard { true };
     CustomOptional<int> DlssNrToggleKey { UnboundKey };
+    // In-game adjust keys for menu-less tuning (hot-reload friendly). VK codes.
+    // Default layout: F6 = cycle knob, F8 = decrease, F9 = increase (F7 = NR toggle).
+    CustomOptional<int> DlssNrAdjustNextKey { UnboundKey };
+    CustomOptional<int> DlssNrAdjustUpKey { UnboundKey };
+    CustomOptional<int> DlssNrAdjustDownKey { UnboundKey };
     CustomOptional<uint32_t> DlssNrPreset { 0 };
     CustomOptional<float> DlssNrIntensity { 1.0f };
     // 0 Standard, 1 Natural, 2 Cinematic.

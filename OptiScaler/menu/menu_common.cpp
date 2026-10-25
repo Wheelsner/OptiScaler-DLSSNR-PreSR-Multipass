@@ -174,6 +174,55 @@ static float lastMenuScale = 0.0f;
 static CustomOptional<uint32_t> comboPreset { 0 };
 static int lastKey = 0;
 static bool inputDlssNr = false;
+static bool inputDlssNrAdjustNext = false;
+static bool inputDlssNrAdjustUp = false;
+static bool inputDlssNrAdjustDown = false;
+
+// ---- Menu-less NR tuning knobs (cycled with AdjustNextKey, nudged with Up/Down keys) ----
+// Entries use the menu's own ranges and the same operator= write path as the ImGui sliders,
+// so the exit-save persists whatever is tuned here.
+struct DlssNrKnob
+{
+    const char* label;
+    CustomOptional<float> Config::* fmember = nullptr;
+    CustomOptional<uint32_t> Config::* imember = nullptr;
+    float minimum = 0.0f;
+    float maximum = 1.0f;
+    float step = 0.05f;
+};
+
+static const DlssNrKnob dlssNrKnobs[] {
+    { "Detail strength (transfer)", &Config::DlssNrTransferStrength, nullptr, 0.0f, 2.0f, 0.05f },
+    { "Colour strength", &Config::DlssNrColourStrength, nullptr, 0.0f, 4.0f, 0.05f },
+    { "Intensity", &Config::DlssNrIntensity, nullptr, 0.0f, 2.0f, 0.05f },
+    { "Local structure", &Config::DlssNrLocalStructure, nullptr, 0.0f, 2.0f, 0.05f },
+    { "Local tone", &Config::DlssNrLocalTone, nullptr, 0.0f, 2.0f, 0.05f },
+    { "Skin detail", &Config::DlssNrSkinDetail, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Skin colour", &Config::DlssNrSkinColour, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Skin structure", &Config::DlssNrSkinStructure, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Environment detail", &Config::DlssNrEnvironmentDetail, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Environment colour", &Config::DlssNrEnvironmentColour, nullptr, 0.0f, 1.0f, 0.05f },
+    { "Restore sharpness", &Config::DlssNrReplaceDetailStrength, nullptr, 0.0f, 2.0f, 0.05f },
+    { "White point trim", &Config::DlssNrWhitePointTrim, nullptr, -1.0f, 1.0f, 0.05f },
+    { "Preset", nullptr, &Config::DlssNrPreset, 0.0f, 8.0f, 1.0f },
+    { "Style (0 Std / 1 Nat / 2 Cin)", nullptr, &Config::DlssNrStyle, 0.0f, 2.0f, 1.0f },
+};
+static size_t dlssNrKnobIndex = 0;
+
+static float DlssNrKnobRead(const Config* config, const DlssNrKnob& knob)
+{
+    if (knob.fmember)
+        return (config->*knob.fmember).value_or_default();
+    return static_cast<float>((config->*knob.imember).value_or_default());
+}
+
+static void DlssNrKnobWrite(Config* config, const DlssNrKnob& knob, float value)
+{
+    if (knob.fmember)
+        (config->*knob.fmember) = value;
+    else
+        (config->*knob.imember) = static_cast<uint32_t>(value);
+}
 static bool capturingKey = false;
 
 template <typename T, size_t N> struct RingBuffer
@@ -358,6 +407,12 @@ void MenuCommon::UpdateManualInput(HWND targetHwnd)
                       "Menu key pressed, will be switching FPS mode");
         CheckShortcut(config->DlssNrToggleKey.value_or_default(), inputDlssNr,
                       "Neural Rendering key pressed, will be toggling the pass");
+        CheckShortcut(config->DlssNrAdjustNextKey.value_or_default(), inputDlssNrAdjustNext,
+                      "NR adjust key pressed, will be cycling the knob");
+        CheckShortcut(config->DlssNrAdjustUpKey.value_or_default(), inputDlssNrAdjustUp,
+                      "NR adjust key pressed, will be increasing the value");
+        CheckShortcut(config->DlssNrAdjustDownKey.value_or_default(), inputDlssNrAdjustDown,
+                      "NR adjust key pressed, will be decreasing the value");
     }
     else if (capturingKey)
     {
@@ -1552,6 +1607,38 @@ void MenuCommon::HandleMenuShortcuts(RenderMenuContext& ctx)
         {
             inputFps = false;
             config->ShowFps = !config->ShowFps.value_or_default();
+        }
+
+        if (inputDlssNrAdjustNext)
+        {
+            inputDlssNrAdjustNext = false;
+            dlssNrKnobIndex = (dlssNrKnobIndex + 1) % std::size(dlssNrKnobs);
+            const auto& knob = dlssNrKnobs[dlssNrKnobIndex];
+            const auto value = DlssNrKnobRead(config, knob);
+            LOG_INFO("DLSS-NR adjust: selected '{}' = {:.2f} (range {:.2f} to {:.2f}, step {:.2f})", knob.label, value,
+                     knob.minimum, knob.maximum, knob.step);
+
+            ImGuiToast toast { ImGuiToastType::Info, 2000 };
+            toast.setTitle("DLSS-NR knob");
+            toast.setContent(std::format("{} = {:.2f}", knob.label, value).c_str());
+            ImGui::InsertNotification(toast);
+        }
+
+        if (inputDlssNrAdjustUp || inputDlssNrAdjustDown)
+        {
+            const bool up = inputDlssNrAdjustUp;
+            inputDlssNrAdjustUp = false;
+            inputDlssNrAdjustDown = false;
+            const auto& knob = dlssNrKnobs[dlssNrKnobIndex];
+            auto value = DlssNrKnobRead(config, knob) + (up ? knob.step : -knob.step);
+            value = std::clamp(value, knob.minimum, knob.maximum);
+            DlssNrKnobWrite(config, knob, value);
+            LOG_INFO("DLSS-NR adjust: '{}' = {:.2f}", knob.label, value);
+
+            ImGuiToast toast { ImGuiToastType::Info, 2000 };
+            toast.setTitle("DLSS-NR knob");
+            toast.setContent(std::format("{} = {:.2f}", knob.label, value).c_str());
+            ImGui::InsertNotification(toast);
         }
 
         if (inputDlssNr)

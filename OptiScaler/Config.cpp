@@ -351,6 +351,9 @@ bool Config::Reload(std::filesystem::path iniPath)
             DlssNrDenoiseFirstNeighbourhoodClamp.reset_from_config(readBool("DlssNr", "DenoiseFirstNeighbourhoodClamp"));
             DlssNrDenoiseFirstFireflyGuard.reset_from_config(readBool("DlssNr", "DenoiseFirstFireflyGuard"));
             DlssNrToggleKey.reset_from_config(readInt("DlssNr", "ToggleKey"));
+            DlssNrAdjustNextKey.reset_from_config(readInt("DlssNr", "AdjustNextKey"));
+            DlssNrAdjustUpKey.reset_from_config(readInt("DlssNr", "AdjustUpKey"));
+            DlssNrAdjustDownKey.reset_from_config(readInt("DlssNr", "AdjustDownKey"));
             DlssNrTransferStrength.reset_from_config(readFloat("DlssNr", "TransferStrength"));
             DlssNrColourStrength.reset_from_config(readFloat("DlssNr", "ColourStrength"));
             DlssNrMaxRatio.reset_from_config(readFloat("DlssNr", "MaxRatio"));
@@ -1315,6 +1318,18 @@ bool Config::SaveIni(std::filesystem::path destination)
         {
             auto toggle = Instance()->DlssNrToggleKey.value_for_config();
             ini.SetValue("DlssNr", "ToggleKey", GetIntValue(toggle, toggle > 0).c_str());
+        }
+        {
+            auto next = Instance()->DlssNrAdjustNextKey.value_for_config();
+            ini.SetValue("DlssNr", "AdjustNextKey", GetIntValue(next, next > 0).c_str());
+        }
+        {
+            auto up = Instance()->DlssNrAdjustUpKey.value_for_config();
+            ini.SetValue("DlssNr", "AdjustUpKey", GetIntValue(up, up > 0).c_str());
+        }
+        {
+            auto down = Instance()->DlssNrAdjustDownKey.value_for_config();
+            ini.SetValue("DlssNr", "AdjustDownKey", GetIntValue(down, down > 0).c_str());
         }
         ini.SetValue("DlssNr", "TransferStrength",
                      GetFloatValue(Instance()->DlssNrTransferStrength.value_for_config()).c_str());
