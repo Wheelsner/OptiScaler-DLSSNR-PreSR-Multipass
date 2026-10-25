@@ -1633,6 +1633,12 @@ void MenuCommon::HandleMenuShortcuts(RenderMenuContext& ctx)
             auto value = DlssNrKnobRead(config, knob) + (up ? knob.step : -knob.step);
             value = std::clamp(value, knob.minimum, knob.maximum);
             DlssNrKnobWrite(config, knob, value);
+            // Write through to the ini: there is no exit-save (DLL_PROCESS_DETACH
+            // is inert by design and the menu's Save button is unreachable under
+            // Proton), so without this the tune lives only in memory and dies
+            // with the process. The subsequent hot-reload picks the file up and
+            // resyncs _configIni to the same value — no guard conflict.
+            config->SaveIni();
             LOG_INFO("DLSS-NR adjust: '{}' = {:.2f}", knob.label, value);
 
             ImGuiToast toast { ImGuiToastType::Info, 2000 };
