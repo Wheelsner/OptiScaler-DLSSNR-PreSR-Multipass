@@ -57,6 +57,15 @@ template <class T, HasDefaultValue defaultState = WithDefault> class CustomOptio
         }
     }
 
+    // Re-apply an ini value over one that was already set (ini hot-reload).
+    // set_from_config is first-write-wins so profile Reloads do not clobber
+    // menu-tweaked values; the ini watcher needs the file to win instead.
+    constexpr void reset_from_config(const std::optional<T>& opt)
+    {
+        this->reset();
+        set_from_config(opt);
+    }
+
     constexpr CustomOptional& operator=(const T& value)
     {
         _volatile = false;
